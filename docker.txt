@@ -1,0 +1,29 @@
+FROM php:7.4-apache
+
+ARG WP_VERSION=5.8
+ARG WP_SHA1=7eac1f4ac0407f2a623c380a77a08a304dceb039
+
+
+WORKDIR /var/www/html
+
+
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-install mysqli
+
+RUN wget -O wordpress.tar.gz https://wordpress.org/wordpress-${WP_VERSION}.tar.gz \
+    && echo "${WP_SHA1} *wordpress.tar.gz" | sha1sum -c - \
+    && tar -xzf wordpress.tar.gz --strip-components=1 \
+    && rm wordpress.tar.gz \
+    && chown -R www-data:www-data /var/www/html
+
+
+COPY 000-default.conf /etc/apache2/sites-available/
+RUN a2enmod rewrite
+
+ENTRYPOINT ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
+CMD ["apache2-foreground"]
+
+docker build -t wordpress-apache
